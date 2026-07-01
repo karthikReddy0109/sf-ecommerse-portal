@@ -1,4 +1,22 @@
 public with sharing class OrderService {
+
+    private static final Map<String, Set<String>> VALID_TRANSITIONS = new Map<String, Set<String>>{
+        'Draft'      => new Set<String>{'Confirmed', 'Cancelled'},
+        'Confirmed'  => new Set<String>{'Processing', 'Cancelled'},
+        'Processing' => new Set<String>{'Shipped', 'Cancelled'},
+        'Shipped'    => new Set<String>{'Delivered'},
+        'Delivered'  => new Set<String>(),
+        'Cancelled'  => new Set<String>()
+    };
+
+    private static final Map<String, String> STATUS_TO_PROCESSING_STAGE = new Map<String, String>{
+        'Confirmed' => 'Validated',
+        'Processing' => 'Payment Confirmed',
+        'Shipped' => 'Shipped',
+        'Delivered' => 'Fulfilled',
+        'Cancelled' => ''
+    };
+
     public class OrderCreateRequest{
         public Id customerId;
         public Id contactId;
@@ -10,6 +28,33 @@ public with sharing class OrderService {
         public Id productId;
         public Integer quantity;
         public Decimal discountPercent;
+    }
+
+    public static Id updateOrderStatus(Id orderId, String newStatus){
+        List<Order__c> orders = [SELECT Id, Status__c, Processing_Stage__c FROM Order__c WHERE Id = :orderId LIMIT 1];
+        if(orders.isEmpty()){
+            throw new CustomExceptions.RecordNotFoundException('Order not found: ' + orderId);
+        }
+        Order__c order = orders[0];
+        String currStatus = order.Status__c;
+        Set<String> allowedStatuses = VALID_TRANSITIONS.get(currStatus);
+        if(allowedStatuses == null || !allowedStatuses.contains(newStatus)){
+            throw new CustomExceptions.ValidationException(
+                currStatus + ' cannot be transitioned to ' + newStatus
+            );
+        }
+        if(!VALID_TRANSITIONS.get(currStatus).contains(newStatus)){
+            throw new CustomExceptions.ValidationException(currStatus + ' cannot be transitioned to ' + newStatus);
+        }
+        order.Status__c = newStatus;
+        order.Processing_Stage__c = STATUS_TO_PROCESSING_STAGE.containsKey(order.Status__c) ? STATUS_TO_PROCESSING_STAGE.get(order.Status__c) : order.Processing_Stage__c;
+        try{
+            update order;
+        }catch(Exception e){
+            System.debug('An error occured while updating order : ' + orderId);
+        }
+    
+        return orderId;
     }
 
     private static void deductStock(List<OrderLineItem> lineItems){
