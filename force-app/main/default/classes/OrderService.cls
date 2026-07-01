@@ -12,6 +12,43 @@ public with sharing class OrderService {
         public Decimal discountPercent;
     }
 
+    private static void deductStock(List<OrderLineItem> lineItems){
+        Set<Id> productIdSet = new Set<Id>();
+        for(OrderLineItem item : lineItems){
+            if(item.productId == null) continue;
+            productIdSet.add(item.productId);
+        }
+        Map<Id, Product__c> productIdToProductMap = new Map<Id, Product__c>(
+            [
+                SELECT Id, Stock_Quantity__c
+                FROM Product__c
+                WHERE Id IN: productIdSet
+                FOR UPDATE
+            ]
+        );
+        List<Product__c> productsToUpdate = new List<Product__c>();
+        for(OrderLineItem item : lineItems){
+            if(item.productId == null || !(productIdToProductMap.containsKey(item.productId))) continue;
+            Product__c product = new Product__c(Id = item.productId);
+            Integer currStock = productIdToProductMap.get(item.productId).Stock_Quantity__c == null ? 0 : productIdToProductMap.get(item.productId).Stock_Quantity__c;
+            if(currStock < item.quantity) {
+                throw new CustomExceptions.ValidationException(
+                    'Insufficient stock for product: ' + item.productId + 
+                    '. Available: ' + currStock + ', Requested: ' + item.quantity
+                );
+            }
+            product.Stock_Quantity__c = currStock - item.quantity;
+            productsToUpdate.add(product);
+        }
+        if(!productsToUpdate.isEmpty()){
+            try{
+                update productsToUpdate;
+            }catch(Exception e){
+                throw new AuraHandledException('An exception occured while updating product records : ' + e.getMessage());
+            }
+        }
+    }
+
     private static Map<Id, Product__c> validateStockAvailability(List<OrderLineItem> lineItems){
         // Collect product Id's 
         Set<Id> productIdSet = new Set<Id>();
@@ -76,14 +113,30 @@ public with sharing class OrderService {
                 insert lineItemList;
             } 
         }catch(DmlException e){
-            System.debug('An error occured while insrting order ' + e.getMessge());
+            System.debug('An error occured while insrting order ' + e.getMessage());
         }
         return order.Id;
     }
 
+    @AuraEnabled
     public static Id createOrder(OrderCreateRequest request){
-        Map<Id, Product__c> productMap = validateStockAvailability(request.lineItems);
-        Id orderId = insertOrderWithLineItems(request, productMap);
-        return orderId;
+        try{
+            // Stage 1 — validate stock and get product map
+            Map<Id, Product__c> productMap = validateStockAvailability(request.lineItems);
+            
+            // Stage 2 — create order and line items
+            Id orderId = insertOrderWithLineItems(request, productMap);
+            
+            // Stage 3 — deduct stock
+            deductStock(request.lineItems);
+            
+            return orderId;
+            
+        } catch(CustomExceptions.ValidationException e){
+            throw new AuraHandledException(e.getMessage());
+        } catch(Exception e){
+            ErrorLogger.log(e, 'OrderService', 'createOrder', null, 'ERROR');
+            throw new AuraHandledException('Order creation failed: ' + e.getMessage());
+        }
     }
 }
