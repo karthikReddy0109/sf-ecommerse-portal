@@ -184,4 +184,89 @@ public with sharing class OrderService {
             throw new AuraHandledException('Order creation failed: ' + e.getMessage());
         }
     }
+
+    private static void releaseStock(Id orderId){
+        // 1. Retrieve order line items for the order
+        List<Order_Line_Item__c> orderLineItems = [
+            SELECT Id, Product__c, Quantity__c
+            FROM Order_Line_Item__c
+            WHERE Order__c =: orderId
+        ];
+        if(orderLineItems.isEmpty()) return;
+        // 2. Get products for those order line items
+        Set<Id> productIdSet = new Set<Id>();
+        for(Order_Line_Item__c item : orderLineItems){
+            if(item.Product__c == null) continue;
+            productIdSet.add(item.Product__c);
+        }
+        Map<Id, Product__c> idToProductMap = new Map<Id, Product__c>
+            (
+                [
+                    SELECT Id, Stock_Quantity__c
+                    FROM Product__c 
+                    WHERE Id IN: productIdSet
+                    FOR UPDATE
+                ]
+            );
+        // 3. Update stock quantity
+        List<Product__c> productsToUpdate = new List<Product__c>();
+        for(Order_Line_Item__c item : orderLineItems){
+            if(idToProductMap.containsKey(item.Product__c)){
+                Decimal stockQty = idToProductMap.get(item.Product__c).Stock_Quantity__c;
+                Decimal updatedQty = stockQty == null ? item.Quantity__c : stockQty + item.Quantity__c;
+                Product__c product = new Product__c(
+                    Id = item.Product__c,
+                    Stock_Quantity__c = updatedQty
+                );
+                productsToUpdate.add(product);
+            }
+        }
+        if(!productsToUpdate.isEmpty()){
+            try{
+                update productsToUpdate;
+            }catch(Exception e){
+                System.debug('An error occured while releasing stock ' + e.getMessage());
+            }
+        }
+    }
+
+    @AuraEnabled
+    public static Id cancelOrder(Id orderId){
+        // 1. Fetch the order with Status, Payment Status & Final Amount
+        try{
+            List<Order__c> orderList = [
+                SELECT Status__c, Payment_Status__c, Final_Amount__c
+                FROM Order__c
+                WHERE Id =: orderId
+                LIMIT 1 
+            ];
+            if(orderList.isEmpty()){
+                throw new CustomExceptions.RecordNotFoundException('Order not found: ' + orderId);
+            }
+            Order__c order = orderList[0];
+            // 2. Validate if order can be cancelled. Only orders not in DELIVERED and CANCELLED state can be cancelled.
+            if(order.Status__c == 'Delivered' || order.Status__c == 'Cancelled'){
+                throw new CustomExceptions.ValidationException('Order cannot be cancelled since the order status is : ' + order.Status__c);
+            }
+            // 3. Release stock back to products
+            releaseStock(orderId);
+            // 4. If payment Status is paid then create a Refund record
+            if(order.Payment_Status__c == 'Paid'){
+                Refund__c refund = new Refund__c(
+                    Order__c = orderId,
+                    Amount__c = order.Final_Amount__c,
+                    Reason__c = 'Other'
+                );
+                insert refund;
+            }
+            // 5. Update order to cancelled.
+            order.Status__c = 'Cancelled';
+            update order;
+            // 6. return the orderId.
+            return orderId;
+        }catch(Exception e){
+            System.debug('An error occured while cancelling order with orderId : ' + orderId);
+        }
+        
+    }
 }
