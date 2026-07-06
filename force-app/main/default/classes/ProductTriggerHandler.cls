@@ -9,7 +9,16 @@ public with sharing class ProductTriggerHandler {
             }
         }
         if(!productIdSet.isEmpty()){
-            System.enqueueJob(new ProductRestockQueueable(new List<Id>(productIdSet)));
+            List<Id> productsToProcess = new List<Id>(productIdSet);
+            // Integer chunkSize = 200;
+            // for(Integer i = 0; i < productsToProcess.size(); i += chunkSize){
+            //     Integer endIndex = Math.min(i + chunkSize, productsToProcess.size());
+            //     List<Id> chunk = productsToProcess.subList(i, endIndex);
+            //     System.enqueueJob(new ProductRestockQueueable(chunk, 0));
+            // }
+            List<Id> firstChunk = productsToProcess.size() > 200 ? new List<Id>(productsToProcess.subList(0, 200)) : productsToProcess.size();
+            List<Id> remaining = productsToProcess.size() > 200 ? new List<Id>(productsToProcess.subList(200, productsToProcess.size())) : new List<Id>();
+            System.enqueueJob(new ProductRestockQueueable(firstChunk, remaining, 0));
         }
     }
 }
