@@ -7,7 +7,7 @@ public with sharing class productService {
             return 'Low Stock';
         }
         return 'In Stock';
-    } 
+    }
     @AuraEnabled(cacheable = true)
     public static List<Product__c> searchProducts(String searchTerm, String category, String stockStatus){
         String likeParam = '%' + String.escapeSingleQuotes(searchTerm) + '%';
