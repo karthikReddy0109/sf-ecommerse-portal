@@ -1,4 +1,26 @@
 public with sharing class ProductTriggerHandler {
+    private static final Integer CHUNK_SIZE = 200;
+
+    private static List<Id> getChunk(List<Id> productIds, Integer startIndex){
+        List<Id> chunk = new List<Id>();
+        Integer endIndex = startIndex + CHUNK_SIZE;
+        if(endIndex > productIds.size()){
+            endIndex = productIds.size();
+        }
+        for(Integer i = startIndex; i < endIndex; i++){
+            chunk.add(productIds[i]);
+        }
+        return chunk;
+    }
+
+    private static List<Id> getRemaining(List<Id> productIds, Integer startIndex){
+        List<Id> remaining = new List<Id>();
+        for(Integer i = startIndex; i < productIds.size(); i++){
+            remaining.add(productIds[i]);
+        }
+        return remaining;
+    }
+
     public static void handleAfterUpdate(List<Product__c> newProducts, Map<Id, Product__c> oldMap){
         Set<Id> productIdSet = new Set<Id>();
         for(Product__c product : newProducts){
@@ -10,14 +32,8 @@ public with sharing class ProductTriggerHandler {
         }
         if(!productIdSet.isEmpty()){
             List<Id> productsToProcess = new List<Id>(productIdSet);
-            // Integer chunkSize = 200;
-            // for(Integer i = 0; i < productsToProcess.size(); i += chunkSize){
-            //     Integer endIndex = Math.min(i + chunkSize, productsToProcess.size());
-            //     List<Id> chunk = productsToProcess.subList(i, endIndex);
-            //     System.enqueueJob(new ProductRestockQueueable(chunk, 0));
-            // }
-            List<Id> firstChunk = productsToProcess.size() > 200 ? new List<Id>(productsToProcess.subList(0, 200)) : productsToProcess.size();
-            List<Id> remaining = productsToProcess.size() > 200 ? new List<Id>(productsToProcess.subList(200, productsToProcess.size())) : new List<Id>();
+            List<Id> firstChunk = getChunk(productsToProcess, 0);
+            List<Id> remaining = productsToProcess.size() > CHUNK_SIZE ? getRemaining(productsToProcess, CHUNK_SIZE) : new List<Id>();
             System.enqueueJob(new ProductRestockQueueable(firstChunk, remaining, 0));
         }
     }

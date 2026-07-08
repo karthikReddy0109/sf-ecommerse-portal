@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "karthik_dev": {
+      "type": "streamable-http",
+      "url": "https://orgfarm-dad48deed1-dev-ed.develop.lightning.force.com/"
+    }
+  }
+}

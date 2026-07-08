@@ -10,7 +10,7 @@ public with sharing class LoyaltyTierUpdateBatch implements Database.Batchable<S
         );
     }
 
-    public void execute(Database.BatchableContext bc, List<SObject> scope){
+    public void execute(Database.BatchableContext bc, List<Customer_Loyalty__c> scope){
         List<Customer_Loyalty__c> toUpdate = new List<Customer_Loyalty__c>();
         Map<String, Decimal> tierToDiscountMap = new Map<String, Decimal>();
         for(Discount_Rule__mdt rule : Discount_Rule__mdt.getAll().values()){

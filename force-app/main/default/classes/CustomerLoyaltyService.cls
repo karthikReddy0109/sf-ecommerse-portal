@@ -75,7 +75,7 @@ public with sharing class CustomerLoyaltyService {
     public static String recalculateTier(Customer_Loyalty__c loyalty){
         String newTier = 'Bronze';
         for(Loyalty_Tier_Config__mdt config : Loyalty_Tier_Config__mdt.getAll().values()){
-            if(loyalty.Total_Spend__c >= conifg.Min_Spend__c){
+            if(loyalty.Total_Spend__c >= config.Min_Spend__c){
                 newTier = config.Tier__c;
             }
         }

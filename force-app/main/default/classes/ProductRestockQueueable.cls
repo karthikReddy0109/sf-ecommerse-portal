@@ -1,4 +1,5 @@
 public with sharing class ProductRestockQueueable implements Queueable, Database.AllowsCallouts {
+    private static final Integer CHUNK_SIZE = 200;
     List<Id> currentChunk;
     List<Id> remaining;
     Integer retryCount;
@@ -17,13 +18,33 @@ public with sharing class ProductRestockQueueable implements Queueable, Database
         public Decimal quantityRequested;
     }
 
+    private static List<Id> getChunk(List<Id> productIds, Integer startIndex){
+        List<Id> chunk = new List<Id>();
+        Integer endIndex = startIndex + CHUNK_SIZE;
+        if(endIndex > productIds.size()){
+            endIndex = productIds.size();
+        }
+        for(Integer i = startIndex; i < endIndex; i++){
+            chunk.add(productIds[i]);
+        }
+        return chunk;
+    }
+
+    private static List<Id> getRemaining(List<Id> productIds, Integer startIndex){
+        List<Id> remainingProductIds = new List<Id>();
+        for(Integer i = startIndex; i < productIds.size(); i++){
+            remainingProductIds.add(productIds[i]);
+        }
+        return remainingProductIds;
+    }
+
     private List<Product__c> getProductsToProcess(){
         try{
             return [
                 SELECT Id, Product_Code__c, 
                 Name, Stock_Quantity__c, Restock_Threshold__c
                 FROM Product__c 
-                WHERE Id IN :productList
+                WHERE Id IN :currentChunk
                 FOR UPDATE
             ];
         }catch(QueryException e){
@@ -78,6 +99,23 @@ public with sharing class ProductRestockQueueable implements Queueable, Database
         }
     }
 
+    private void markProductsAsFailed(List<Product__c> products){
+        List<Product__c> toUpdate = new List<Product__c>();
+        for(Product__c product : products){
+            toUpdate.add(new Product__c(
+                Id = product.Id,
+                Restock_Status__c = 'Failed'
+            ));
+        }
+        if(!toUpdate.isEmpty()){
+            try{
+                update toUpdate;
+            }catch(Exception e){
+                System.debug('Failed to mark products as failed: ' + e.getMessage());
+            }
+        }
+    }
+
     public void execute(QueueableContext qc){
         List<Product__c> products = getProductsToProcess();
         List<RestockRequestPayload> payload = buildRestockRequestPayload(products);
@@ -85,12 +123,8 @@ public with sharing class ProductRestockQueueable implements Queueable, Database
         if(response.getStatusCode() == 200){
             updateProductsRestockStatus(products);
             if(!remaining.isEmpty()){
-                List<Id> nextChunk = remaining.size() > 200
-                ? new List<Id>(remaining.subList(0, 200))
-                : remaining;
-                List<Id> nextRemaining = remaining.size() > 200
-                ? new List<Id>(remaining.subList(200, remaining.size()))
-                : new List<Id>();
+                List<Id> nextChunk = getChunk(remaining, 0);
+                List<Id> nextRemaining = remaining.size() > CHUNK_SIZE ? getRemaining(remaining, CHUNK_SIZE) : new List<Id>();
                 System.enqueueJob(new ProductRestockQueueable(nextChunk, nextRemaining, 0));
             }
         }else{
@@ -100,14 +134,10 @@ public with sharing class ProductRestockQueueable implements Queueable, Database
             }else{
                 markProductsAsFailed(products);
                 if(!remaining.isEmpty()){
-                List<Id> nextChunk = remaining.size() > 200
-                    ? new List<Id>(remaining.subList(0, 200))
-                    : remaining;
-                List<Id> nextRemaining = remaining.size() > 200
-                    ? new List<Id>(remaining.subList(200, remaining.size()))
-                    : new List<Id>();
-                System.enqueueJob(new ProductRestockQueueable(nextChunk, nextRemaining, 0));
-            }
+                    List<Id> nextChunk = getChunk(remaining, 0);
+                    List<Id> nextRemaining = remaining.size() > CHUNK_SIZE ? getRemaining(remaining, CHUNK_SIZE) : new List<Id>();
+                    System.enqueueJob(new ProductRestockQueueable(nextChunk, nextRemaining, 0));
+                }
             }
         }
     }

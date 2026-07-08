@@ -75,7 +75,7 @@ public with sharing class OrderService {
         for(OrderLineItem item : lineItems){
             if(item.productId == null || !(productIdToProductMap.containsKey(item.productId))) continue;
             Product__c product = new Product__c(Id = item.productId);
-            Integer currStock = productIdToProductMap.get(item.productId).Stock_Quantity__c == null ? 0 : productIdToProductMap.get(item.productId).Stock_Quantity__c;
+            Decimal currStock = productIdToProductMap.get(item.productId).Stock_Quantity__c == null ? 0 : productIdToProductMap.get(item.productId).Stock_Quantity__c;
             if(currStock < item.quantity) {
                 throw new CustomExceptions.ValidationException(
                     'Insufficient stock for product: ' + item.productId + 
@@ -180,7 +180,7 @@ public with sharing class OrderService {
         } catch(CustomExceptions.ValidationException e){
             throw new AuraHandledException(e.getMessage());
         } catch(Exception e){
-            ErrorLogger.log(e, 'OrderService', 'createOrder', null, 'ERROR');
+            //ErrorLogger.log(e, 'OrderService', 'createOrder', null, 'ERROR');
             throw new AuraHandledException('Order creation failed: ' + e.getMessage());
         }
     }
@@ -263,10 +263,10 @@ public with sharing class OrderService {
             order.Status__c = 'Cancelled';
             update order;
             // 6. return the orderId.
-            return orderId;
+            
         }catch(Exception e){
             System.debug('An error occured while cancelling order with orderId : ' + orderId);
         }
-        
+        return orderId;
     }
 }
