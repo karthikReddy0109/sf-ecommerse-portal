@@ -14,9 +14,10 @@ public with sharing class CustomerLoyaltyService {
             accountIdSet.add(acc.Id);
         }
         try{
-            Map<Id, Customer_Loyalty__c> idToCustomerLoyaltyMap = new Map<Id, Customer_Loyalty__c>(
-                [SELECT Id, Customer__c, Name FROM Customer_Loyalty__c WHERE Customer__c IN: accountIdSet]
-            );
+            Map<Id, Customer_Loyalty__c> idToCustomerLoyaltyMap = new Map<Id, Customer_Loyalty__c>();
+            for(Customer_Loyalty__c cl : [SELECT Id, Customer__c FROM Customer_Loyalty__c WHERE Customer__c IN: accountIdSet]){
+                idToCustomerLoyaltyMap.put(cl.Customer__c, cl);
+            }
             List<Customer_Loyalty__c> loyaltyRecordsToInsert = new List<Customer_Loyalty__c>();
             for(Account acc : accounts){
                 if(!idToCustomerLoyaltyMap.containsKey(acc.Id)){
@@ -31,15 +32,12 @@ public with sharing class CustomerLoyaltyService {
             if(!loyaltyRecordsToInsert.isEmpty()){
                 insert loyaltyRecordsToInsert;
             }
-        }catch(QueryException qe){
-            throw new AuraHandledException('SOQL failed : ' + qe.getMessage());
-        }catch(DmlException de){
-            throw new AuraHandledException('DML failed : ' + qe.getMessage());
         }catch(Exception e){
-            throw new AuraHandledException('An exception occured : ' + e.getMessage());
+            System.debug('An exception occured : ' + e.getMessage());
         }
     }
 
+    @AuraEnabled
     public static DiscountResult applyLoyaltyDiscount(Id accountId, Decimal orderAmount){
         List<Customer_Loyalty__c> custLoyalty = [
             SELECT Id, Tier__c, Customer__c
@@ -47,10 +45,10 @@ public with sharing class CustomerLoyaltyService {
             WHERE Customer__c =: accountId
         ];
         if(custLoyalty.isEmpty()){
-            return new DiscountResult(
-                discountApplied = false,
-                reason = 'No loyalty record found'
-            );
+            DiscountResult result = new DiscountResult();
+            result.discountApplied = false;
+            result.reason = 'No loyalty record found';
+            return result;
         }
         String customerTier = custLoyalty[0].Tier__c;
         Map<String, Discount_Rule__mdt> tierToDiscount = new Map<String, Discount_Rule__mdt>();
@@ -60,10 +58,9 @@ public with sharing class CustomerLoyaltyService {
         Decimal discountPercentage = tierToDiscount.containsKey(customerTier) ? tierToDiscount.get(customerTier).Discount_Percent__c : 0;
         Decimal minOrderAmount = tierToDiscount.containsKey(customerTier) ? tierToDiscount.get(customerTier).Min_Order_Amount__c : 0;
         if(orderAmount < minOrderAmount){
-            return new DiscountResult(
-                discountApplied = false,
-                reason = 'Order below minimum threshold'
-            );
+            DiscountResult result = new DiscountResult();
+            result.discountApplied = false;
+            result.reason = 'Order below minimum threshold';
         }
         Decimal discountAmount = orderAmount * (discountPercentage / 100);
         DiscountResult result = new DiscountResult();
@@ -75,4 +72,13 @@ public with sharing class CustomerLoyaltyService {
     }
 
     // Build re calculate tier method
+    public static String recalculateTier(Customer_Loyalty__c loyalty){
+        String newTier = 'Bronze';
+        for(Loyalty_Tier_Config__mdt config : Loyalty_Tier_Config__mdt.getAll().values()){
+            if(loyalty.Total_Spend__c >= conifg.Min_Spend__c){
+                newTier = config.Tier__c;
+            }
+        }
+        return newTier;
+    }
 }
