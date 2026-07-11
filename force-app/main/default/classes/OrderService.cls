@@ -173,7 +173,7 @@ public with sharing class OrderService {
             Id orderId = insertOrderWithLineItems(request, productMap);
             
             // Stage 3 — deduct stock
-            deductStock(request.lineItems);
+            //deductStock(request.lineItems);
             
             return orderId;
             
@@ -235,7 +235,7 @@ public with sharing class OrderService {
         // 1. Fetch the order with Status, Payment Status & Final Amount
         try{
             List<Order__c> orderList = [
-                SELECT Status__c, Payment_Status__c, Final_Amount__c
+                SELECT Status__c, Payment_Status__c, Final_Amount__c, Processing_Stage__c
                 FROM Order__c
                 WHERE Id =: orderId
                 LIMIT 1 
@@ -249,7 +249,9 @@ public with sharing class OrderService {
                 throw new CustomExceptions.ValidationException('Order cannot be cancelled since the order status is : ' + order.Status__c);
             }
             // 3. Release stock back to products
-            releaseStock(orderId);
+            if(order.Processing_Stage__c == 'Fulfilled' || order.Processing_Stage__c == 'Shipped'){
+                releaseStock(orderId);
+            }
             // 4. If payment Status is paid then create a Refund record
             if(order.Payment_Status__c == 'Paid'){
                 Refund__c refund = new Refund__c(
