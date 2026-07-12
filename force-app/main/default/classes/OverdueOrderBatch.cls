@@ -68,7 +68,7 @@ public with sharing class OverdueOrderBatch implements Database.Batchable<SObjec
     public void finish(Database.BatchableContext bc){
         Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
         mail.setSubject('Over due order batch processed successfully');
-        mail.setPlainTextBody('Total Processed : ' + totalProcessed, ' Total Overdue : ' + totalOverdue);
+        mail.setPlainTextBody('Total Processed : ' + totalProcessed +  ' Total Overdue : ' + totalOverdue);
         mail.setToAddresses(new List<String>{'karthikreddy1909@gmail.com'});
         Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{mail});
     }
