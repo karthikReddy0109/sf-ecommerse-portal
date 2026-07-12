@@ -1,0 +1,59 @@
+.catalog-container{
+
+    background:#f5f6f8;
+
+    padding:1.5rem;
+}
+
+/* Filter Section */
+
+.filter-panel{
+
+    background:white;
+
+    padding:1rem;
+
+    border-radius:10px;
+
+    margin-bottom:2rem;
+
+    box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+
+/* Product Section */
+
+.catalog-grid{
+
+    background:#f5f6f8;
+
+    border-radius:10px;
+}
+
+/* Empty State */
+
+.empty-state{
+
+    background:white;
+
+    border-radius:10px;
+
+    padding:4rem;
+
+    text-align:center;
+
+    box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+
+.empty-state h2{
+
+    margin-top:1rem;
+
+    font-size:1.4rem;
+}
+
+.empty-state p{
+
+    color:#666;
+
+    margin-top:.5rem;
+}
