@@ -1,0 +1,151 @@
+<template>
+    <lightning-card>
+
+        <div class="catalog-container">
+
+            <!-- ================= Filters ================= -->
+
+            <div class="filter-panel">
+
+                <lightning-layout multiple-rows="true" vertical-align="end">
+
+                    <!-- Search -->
+                    <lightning-layout-item
+                        size="12"
+                        medium-device-size="6"
+                        large-device-size="6"
+                        padding="around-small">
+
+                        <lightning-input
+                            type="search"
+                            label="Search Products"
+                            placeholder="Search products..."
+                            value={searchKey}
+                            onchange={handleSearch}>
+                        </lightning-input>
+
+                    </lightning-layout-item>
+
+                    <!-- Category -->
+                    <lightning-layout-item
+                        size="12"
+                        medium-device-size="3"
+                        large-device-size="3"
+                        padding="around-small">
+
+                        <lightning-combobox
+                            label="Category"
+                            value={selectedCategory}
+                            options={categoryOptions}
+                            onchange={handleCategoryChange}>
+                        </lightning-combobox>
+
+                    </lightning-layout-item>
+
+                    <!-- Stock Status -->
+                    <lightning-layout-item
+                        size="12"
+                        medium-device-size="3"
+                        large-device-size="3"
+                        padding="around-small">
+
+                        <lightning-combobox
+                            label="Stock Status"
+                            value={selectedStockStatus}
+                            options={stockStatusOptions}
+                            onchange={handleStockStatusChange}>
+                        </lightning-combobox>
+
+                    </lightning-layout-item>
+
+                </lightning-layout>
+
+            </div>
+
+            <!-- ================= Loading ================= -->
+
+            <template lwc:if={isLoading}>
+                <div class="slds-p-vertical_x-large slds-align_absolute-center">
+
+                    <lightning-spinner
+                        size="medium"
+                        alternative-text="Loading Products">
+                    </lightning-spinner>
+
+                </div>
+            </template>
+
+            <!-- ================= Error ================= -->
+
+            <template lwc:elseif={errorMessage}>
+
+                <div class="slds-notify slds-notify_alert slds-theme_error slds-m-top_large"
+                     role="alert">
+
+                    {errorMessage}
+
+                </div>
+
+            </template>
+
+            <!-- ================= No Products ================= -->
+
+            <template lwc:elseif={noProductsFound}>
+
+                <div class="empty-state">
+
+                    <lightning-icon
+                        icon-name="utility:search"
+                        size="large">
+                    </lightning-icon>
+
+                    <h2>No Products Found</h2>
+
+                    <p>
+                        Try changing the search keyword or filters.
+                    </p>
+
+                </div>
+
+            </template>
+
+            <!-- ================= Product Grid ================= -->
+
+            <template lwc:elseif={hasProducts}>
+
+                <div class="catalog-grid">
+
+                    <div class="slds-grid slds-wrap">
+
+                        <template
+                            for:each={products}
+                            for:item="product">
+
+                            <div
+                                key={product.id}
+                                class="slds-col
+                                       slds-size_1-of-1
+                                       slds-medium-size_1-of-2
+                                       slds-large-size_1-of-3
+                                       slds-p-around_medium">
+
+                                <c-product-card
+                                    product={product}
+                                    onproductselected={handleProductSelected}>
+                                </c-product-card>
+
+                            </div>
+
+                        </template>
+
+                    </div>
+
+                </div>
+
+            </template>
+
+        </div>
+
+    </lightning-card>
+
+</template>

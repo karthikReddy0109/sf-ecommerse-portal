@@ -1,0 +1,80 @@
+<template>
+
+    <div class="product-card">
+
+    <!-- Product Icon -->
+        <div class="icon-container">
+            <lightning-icon
+                icon-name="standard:product"
+                size="medium"
+                alternative-text="Product">
+            </lightning-icon>
+        </div>
+
+        <div class="product-details">
+
+            <div class="product-name">
+                <h2>{product.name}</h2>
+            </div>
+
+            <div class="category-section">
+                <lightning-badge label={product.category}></lightning-badge>
+            </div>
+
+            <div class="price">
+                {formattedPrice}
+            </div>
+
+            <div class="stock-status">
+
+                <template lwc:if={isInStock}>
+                    <lightning-badge
+                        label="In Stock"
+                        class="slds-theme_success">
+                    </lightning-badge>
+                </template>
+
+                <template lwc:elseif={isLowStock}>
+                    <lightning-badge
+                        label="Low Stock"
+                        class="slds-theme_warning">
+                    </lightning-badge>
+                </template>
+
+                <template lwc:else>
+                    <lightning-badge
+                        label="Out of Stock"
+                        class="slds-theme_error">
+                    </lightning-badge>
+                </template>
+
+            </div>
+
+            <div class="quantity">
+                Qty: <strong>{product.quantity}</strong>
+            </div>
+
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="button-section">
+
+            <lightning-button
+                label="View"
+                variant="neutral"
+                onclick={handleView}>
+            </lightning-button>
+
+            <lightning-button
+                label="Add to Order"
+                variant="brand"
+                onclick={handleAddToOrder}
+                disabled={isOutOfStock}>
+            </lightning-button>
+
+        </div>
+
+    </div>
+
+</template>
