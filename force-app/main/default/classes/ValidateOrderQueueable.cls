@@ -20,6 +20,7 @@ public class ValidateOrderQueueable implements Queueable {
             List<Order_Line_Item__c> lineItems = orderToOrderLineItems.get(orderId);
             if(lineItems == null || lineItems.isEmpty()) continue;
             Boolean isValidationFailed = false;
+            String errorMsg;
             for(Order_Line_Item__c lineItem : lineItems){
                 if(lineItem.Product__r == null) {
                     isValidationFailed = true;
@@ -27,15 +28,15 @@ public class ValidateOrderQueueable implements Queueable {
                 }
                 if(lineItem.Quantity__c > lineItem.Product__r.Stock_Quantity__c){
                     isValidationFailed = true;
+                    errorMsg = 'Insufficient stock for: ' + lineItem.Product__r.Name + 
+                  '. Available: ' + lineItem.Product__r.Stock_Quantity__c + 
+                  ', Requested: ' + lineItem.Quantity__c;
                     break;
                 }
             }
             Order__c order = new Order__c();
             order.Id = orderId;
             if(isValidationFailed){
-                String errorMsg = 'Insufficient stock for: ' + lineItem.Product__r.Name + 
-                  '. Available: ' + lineItem.Product__r.Stock_Quantity__c + 
-                  ', Requested: ' + lineItem.Quantity__c;
                 order.Notes__c = errorMsg;
                 order.Status__c = 'Failed';
                 order.Notes__c = 'Validation failed: insufficient stock for one or more products';

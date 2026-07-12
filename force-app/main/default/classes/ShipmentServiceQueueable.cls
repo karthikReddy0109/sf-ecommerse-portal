@@ -16,7 +16,7 @@ public with sharing class ShipmentServiceQueueable implements Queueable, Databas
     }
 
     public class ShipmentPayload{
-        List<Order> orders = new List<Order>();
+        List<OrderShipmentRequest> orders = new List<OrderShipmentRequest>();
     }
 
     public class OrderShipmentRequest {
