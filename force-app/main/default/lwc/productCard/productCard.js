@@ -24,9 +24,6 @@ export default class ProductCard extends NavigationMixin(LightningElement) {
     }
 
     handleView(e){
-        // console.log('Button Clicked');
-        // console.log(e.detail.product);
-        // console.log(this.product.id);
         this[NavigationMixin.Navigate]({
             type: 'standard__recordPage',
             attributes:{
@@ -38,6 +35,12 @@ export default class ProductCard extends NavigationMixin(LightningElement) {
     }
 
     handleAddToOrder(){
-
+        const event = new CustomEvent('productselected', {
+            detail:{
+                productId: this.product.id,
+                productName: this.product.name
+            }
+        });
+        this.dispatchEvent(event);
     }
 }

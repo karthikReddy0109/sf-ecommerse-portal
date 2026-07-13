@@ -35,7 +35,7 @@ export default class ProductCatalogue extends LightningElement {
             this.isLoading = true;
             const searchResults = await searchProducts({searchTerm: this.searchTerm, category: this.selectedCategory, stockStatus: this.selectedStockStatus});
             this.products = searchResults;
-            console.log('Products fetched successfully : ' + searchResults);
+            // console.log('Products fetched successfully : ' + searchResults);
             this.isLoading = false;
             this.errorMessage = '';
         }catch(error){
@@ -65,5 +65,13 @@ export default class ProductCatalogue extends LightningElement {
 
     get noProductsFound(){
         return this.products.length === 0 && !this.isLoading && !this.errorMessage;
+    }
+
+    handleProductSelected(e){
+        const productId = e.detail.productId;
+        const productName = e.detail.productName;
+        // console.log('Printing Product...');
+        // console.log('Product Id : ' + productId);
+        // console.log('Product Name : ' + productName);
     }
 }
