@@ -271,4 +271,79 @@ public with sharing class OrderService {
         }
         return orderId;
     }
+
+    @AuraEnabled(cacheable = true)
+    public static List<Map<String, String>> getValidNextStatuses(String currentStatus){
+        List<Map<String, String>> options = new List<Map<String, String>>();
+        Set<String> validStatuses = VALID_TRANSITIONS.get(currentStatus);
+        if(validStatuses == null) return options;
+        for(String status : validStatuses){
+            options.add(new Map<String, String>{
+                'label' => status,
+                'value' => status
+            });
+        }
+        return options;
+    }
+
+    public class GetOrdersWrapper{
+        @AuraEnabled public String id;
+        @AuraEnabled public String name;
+        @AuraEnabled public String customerId;
+        @AuraEnabled public String customerName;
+        @AuraEnabled public String contactId;
+        @AuraEnabled public String status;
+        @AuraEnabled public String paymentStaus;
+        @AuraEnabled public Decimal finalAmount;
+        @AuraEnabled public Date orderDate;
+        @AuraEnabled public String shippingAddress;
+        @AuraEnabled public String trackingNumber;
+        @AuraEnabled public Date expectedDeliveryDate;
+        @AuraEnabled public String notes;
+        @AuraEnabled public String processingStage;
+    }
+
+    @AuraEnabled(cacheable = true)
+    public static List<GetOrdersWrapper> getOrders(String status, String paymentStatus, String fromDate, String toDate){
+        String queryString = 'SELECT Id, Name, Customer__c, Customer__r.Name, Contact__c, Status__c, Payment_Status__c, Final_Amount__c, Order_Date__c, Shipping_Address__c, Tracking_Number__c, Expected_Delivery__c, Notes__c, Processing_Stage__c FROM Order__c';
+        if(status != null && !String.isBlank(status)){
+            queryString += ' WHERE Status__c =: status';
+        }
+        if(!String.isBlank(fromDate)){
+            Date formattedFromDate = Date.valueOf(fromDate);
+            queryString += ' AND Order_Date__c >= :formattedFromDate';
+        }
+        if(!String.isBlank(toDate)){
+            Date formattedToDate = Date.valueOf(toDate);
+            queryString += ' AND Order_Date__c <= :formattedToDate';
+        }
+        if(!String.isBlank(paymentStatus)){
+            queryString += ' AND Payment_Status__c =: paymentStatus';
+        }
+        queryString += ' ORDER BY :Order_Date__c DESC';
+        List<GetOrdersWrapper> ordersWrapper = new List<GetOrdersWrapper>();
+        try{
+            List<Order__c> orderList = Database.query(queryString);
+            for(Order__c order : orderList){
+                GetOrdersWrapper orderWrapperItem = new GetOrdersWrapper();
+                orderWrapperItem.id = order.Id;
+                orderWrapperItem.name = order.Name;
+                orderWrapperItem.customerId = order.Customer__c;
+                orderWrapperItem.customerName = order.Customer__r.Name;
+                orderWrapperItem.expectedDeliveryDate = order.Expected_Delivery__c;
+                orderWrapperItem.contactId = order.Contact__c;
+                orderWrapperItem.finalAmount = order.Final_Amount__c;
+                orderWrapperItem.notes = order.Notes__c;
+                orderWrapperItem.orderDate = order.Order_Date__c;
+                orderWrapperItem.paymentStaus = order.Payment_Status__c;
+                orderWrapperItem.status = order.Status__c;
+                orderWrapperItem.shippingAddress = order.Shipping_Address__c;
+                orderWrapperItem.trackingNumber = order.Tracking_Number__c;
+                ordersWrapper.add(orderWrapperItem);
+            }
+        }catch(Exception e){
+            System.debug('An exception occured while querying orders');
+        }
+        return ordersWrapper;
+    }
 }
