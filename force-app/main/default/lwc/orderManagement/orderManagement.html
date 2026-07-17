@@ -1,0 +1,274 @@
+<template>
+
+    <!-- Order Management Card -->
+    <lightning-card title="Order Management" icon-name="standard:orders">
+
+        <!-- Actions -->
+        <lightning-button
+            slot="actions"
+            label="New Order"
+            variant="brand"
+            icon-name="utility:add"
+            onclick={handleNewOrder}>
+        </lightning-button>
+
+        <div class="slds-p-around_medium">
+
+            <!-- ================= FILTER BAR ================= -->
+            <div class="slds-grid slds-wrap slds-gutters slds-m-bottom_medium">
+
+                <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-4">
+                    <lightning-combobox
+                        label="Status"
+                        value={selectedStatus}
+                        options={statusOptions}
+                        onchange={handleStatusFilterChange}>
+                    </lightning-combobox>
+                </div>
+
+                <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-4">
+                    <lightning-combobox
+                        label="Payment Status"
+                        value={selectedPaymentStatus}
+                        options={paymentStatusOptions}
+                        onchange={handlePaymentStatusFilterChange}>
+                    </lightning-combobox>
+                </div>
+
+                <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-4">
+                    <lightning-input
+                        type="date"
+                        label="From Date"
+                        value={fromDate}
+                        onchange={handleFromDateChange}>
+                    </lightning-input>
+                </div>
+
+                <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-4">
+                    <lightning-input
+                        type="date"
+                        label="To Date"
+                        value={toDate}
+                        onchange={handleToDateChange}>
+                    </lightning-input>
+                </div>
+
+            </div>
+
+            <!-- ================= LOADING ================= -->
+
+            <template lwc:if={isLoading}>
+                <lightning-spinner
+                    alternative-text="Loading Orders"
+                    size="medium">
+                </lightning-spinner>
+            </template>
+
+            <!-- ================= ERROR ================= -->
+
+            <template lwc:if={errorMessage}>
+                <div
+                    class="slds-notify slds-notify_alert slds-theme_error slds-m-bottom_medium"
+                    role="alert">
+
+                    <span>{errorMessage}</span>
+
+                </div>
+            </template>
+
+            <!-- ================= ORDERS TABLE ================= -->
+
+            <div class="slds-scrollable_x">
+
+                <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_striped">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Order #</th>
+
+                            <th>Customer</th>
+
+                            <th class="slds-text-align_right">
+                                Amount
+                            </th>
+
+                            <th>Status</th>
+
+                            <th>Payment</th>
+
+                            <th class="slds-text-align_center">
+                                Actions
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        <template
+                            for:each={orders}
+                            for:item="order">
+
+                            <!-- Main Row -->
+
+                            <tr key={order.id}>
+
+                                <td>{order.name}</td>
+
+                                <td>{order.customerName}</td>
+
+                                <td class="slds-text-align_right">
+                                    ₹{order.finalAmount}
+                                </td>
+
+                                <td>
+
+                                    <lightning-badge
+                                        label={order.status}>
+                                    </lightning-badge>
+
+                                </td>
+
+                                <td>
+                                    {order.paymentStatus}
+                                </td>
+
+                                <td class="slds-text-align_center">
+
+                                    <lightning-button-icon
+                                        icon-name="utility:chevrondown"
+                                        variant="border-filled"
+                                        alternative-text="Expand"
+                                        data-id={order.id}
+                                        onclick={handleExpandRow}>
+                                    </lightning-button-icon>
+
+                                </td>
+
+                            </tr>
+
+                            <!-- Expanded Row -->
+
+                            <template lwc:if={order.isExpanded}>
+
+                                <tr key={order.detailRowKey}>
+
+                                    <td colspan="6">
+
+                                        <div class="slds-box slds-theme_default">
+
+                                            <!-- Shipping Details -->
+
+                                            <div class="slds-grid slds-wrap slds-gutters">
+
+                                                <div class="slds-col slds-size_1-of-3">
+
+                                                    <p>
+                                                        <strong>Shipping Address</strong>
+                                                    </p>
+
+                                                    <p>
+                                                        {order.shippingAddress}
+                                                    </p>
+
+                                                </div>
+
+                                                <div class="slds-col slds-size_1-of-3">
+
+                                                    <p>
+                                                        <strong>Tracking Number</strong>
+                                                    </p>
+
+                                                    <p>
+                                                        {order.trackingNumber}
+                                                    </p>
+
+                                                </div>
+
+                                                <div class="slds-col slds-size_1-of-3">
+
+                                                    <p>
+                                                        <strong>Expected Delivery</strong>
+                                                    </p>
+
+                                                    <p>
+                                                        {order.expectedDeliveryDate}
+                                                    </p>
+
+                                                </div>
+
+                                            </div>
+                                            <template lwc:if={hasExpandedLineItems}>
+                                                <div class="slds-m-top_large">
+
+                                                    <c-order-line-item-editor
+                                                        line-items={expandedOrderLineItems}>
+                                                    </c-order-line-item-editor>
+
+                                                </div>
+                                            </template>
+                                            
+
+                                            <!-- Status Update -->
+
+                                            <div class="slds-grid slds-wrap slds-gutters slds-m-top_large">
+
+                                                <div class="slds-col slds-size_1-of-2">
+
+                                                    <lightning-combobox
+                                                        label="Next Status"
+                                                        options={nextStatusOptions}
+                                                        value={selectedNextStatus}
+                                                        data-id={order.id}
+                                                        onchange={handleNextStatusChange}>
+                                                    </lightning-combobox>
+
+                                                </div>
+
+                                            </div>
+
+                                            <!-- Action Buttons -->
+
+                                            <div class="slds-m-top_medium">
+
+                                                <lightning-button
+                                                    label="Update Status"
+                                                    variant="brand"
+                                                    data-id={order.id}
+                                                    onclick={handleUpdateStatus}>
+                                                </lightning-button>
+
+                                                <lightning-button
+                                                    class="slds-m-left_small"
+                                                    label="Cancel Order"
+                                                    variant="destructive"
+                                                    data-id={order.id}
+                                                    onclick={handleCancelOrder}>
+                                                </lightning-button>
+
+                                            </div>
+
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+
+                            </template>
+
+                        </template>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </lightning-card>
+
+</template>

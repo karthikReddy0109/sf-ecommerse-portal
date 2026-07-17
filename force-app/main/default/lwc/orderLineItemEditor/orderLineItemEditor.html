@@ -1,0 +1,110 @@
+<template>
+    <lightning-card title="Line Items" icon-name="standard:orders">
+
+        <div class="slds-p-around_medium">
+
+            <template lwc:if={hasLineItems}>
+
+                <div class="slds-scrollable_x">
+                    <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_striped">
+
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Product">
+                                        Product
+                                    </div>
+                                </th>
+
+                                <th scope="col">
+                                    <div class="slds-truncate slds-text-align_center" title="Quantity">
+                                        Qty
+                                    </div>
+                                </th>
+
+                                <th scope="col">
+                                    <div class="slds-truncate slds-text-align_right" title="Unit Price">
+                                        Unit Price
+                                    </div>
+                                </th>
+
+                                <th scope="col">
+                                    <div class="slds-truncate slds-text-align_center" title="Discount">
+                                        Discount
+                                    </div>
+                                </th>
+
+                                <th scope="col">
+                                    <div class="slds-truncate slds-text-align_right" title="Total">
+                                        Total
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <template for:each={lineItems} for:item="lineItem">
+
+                                <tr key={lineItem.Id}>
+
+                                    <td>
+                                        <div class="slds-truncate"
+                                             title={lineItem.Product__r.Name}>
+                                            {lineItem.Product__r.Name}
+                                        </div>
+                                    </td>
+
+                                    <td class="slds-text-align_center">
+                                        {lineItem.Quantity__c}
+                                    </td>
+
+                                    <td class="slds-text-align_right">
+                                        ₹{lineItem.Unit_Price__c}
+                                    </td>
+
+                                    <td class="slds-text-align_center">
+                                        {lineItem.Discount_Percent__c}%
+                                    </td>
+
+                                    <td class="slds-text-align_right slds-text-title_bold">
+                                        ₹{lineItem.Line_Total__c}
+                                    </td>
+
+                                </tr>
+
+                            </template>
+
+                        </tbody>
+
+                    </table>
+                </div>
+
+            </template>
+
+            <template lwc:else>
+
+                <div class="slds-align_absolute-center slds-p-vertical_x-large">
+
+                    <div class="slds-text-align_center">
+
+                        <lightning-icon
+                            icon-name="utility:info"
+                            size="small"
+                            alternative-text="No Data">
+                        </lightning-icon>
+
+                        <p class="slds-m-top_small slds-text-color_weak">
+                            No line items found.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </template>
+
+        </div>
+
+    </lightning-card>
+</template>

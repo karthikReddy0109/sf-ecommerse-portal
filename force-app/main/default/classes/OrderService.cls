@@ -30,6 +30,7 @@ public with sharing class OrderService {
         public Decimal discountPercent;
     }
 
+    @AuraEnabled
     public static Id updateOrderStatus(Id orderId, String newStatus){
         List<Order__c> orders = [SELECT Id, Status__c, Processing_Stage__c FROM Order__c WHERE Id = :orderId LIMIT 1];
         if(orders.isEmpty()){
@@ -293,7 +294,7 @@ public with sharing class OrderService {
         @AuraEnabled public String customerName;
         @AuraEnabled public String contactId;
         @AuraEnabled public String status;
-        @AuraEnabled public String paymentStaus;
+        @AuraEnabled public String paymentStatus;
         @AuraEnabled public Decimal finalAmount;
         @AuraEnabled public Date orderDate;
         @AuraEnabled public String shippingAddress;
@@ -305,22 +306,33 @@ public with sharing class OrderService {
 
     @AuraEnabled(cacheable = true)
     public static List<GetOrdersWrapper> getOrders(String status, String paymentStatus, String fromDate, String toDate){
+        
+        
         String queryString = 'SELECT Id, Name, Customer__c, Customer__r.Name, Contact__c, Status__c, Payment_Status__c, Final_Amount__c, Order_Date__c, Shipping_Address__c, Tracking_Number__c, Expected_Delivery__c, Notes__c, Processing_Stage__c FROM Order__c';
-        if(status != null && !String.isBlank(status)){
-            queryString += ' WHERE Status__c =: status';
+        List<String> conditions = new List<String>();
+
+        if(!String.isBlank(status)){
+            conditions.add('Status__c = :status');
         }
+
+        if(!String.isBlank(paymentStatus)){
+            conditions.add('Payment_Status__c = :paymentStatus');
+        }
+
         if(!String.isBlank(fromDate)){
             Date formattedFromDate = Date.valueOf(fromDate);
-            queryString += ' AND Order_Date__c >= :formattedFromDate';
+            conditions.add('Order_Date__c >= :formattedFromDate');
         }
+
         if(!String.isBlank(toDate)){
             Date formattedToDate = Date.valueOf(toDate);
-            queryString += ' AND Order_Date__c <= :formattedToDate';
+            conditions.add('Order_Date__c <= :formattedToDate');
         }
-        if(!String.isBlank(paymentStatus)){
-            queryString += ' AND Payment_Status__c =: paymentStatus';
+
+        if(!conditions.isEmpty()){
+            queryString += ' WHERE ' + String.join(conditions, ' AND ');
         }
-        queryString += ' ORDER BY :Order_Date__c DESC';
+        queryString += ' ORDER BY Order_Date__c DESC';
         List<GetOrdersWrapper> ordersWrapper = new List<GetOrdersWrapper>();
         try{
             List<Order__c> orderList = Database.query(queryString);
@@ -335,7 +347,7 @@ public with sharing class OrderService {
                 orderWrapperItem.finalAmount = order.Final_Amount__c;
                 orderWrapperItem.notes = order.Notes__c;
                 orderWrapperItem.orderDate = order.Order_Date__c;
-                orderWrapperItem.paymentStaus = order.Payment_Status__c;
+                orderWrapperItem.paymentStatus = order.Payment_Status__c;
                 orderWrapperItem.status = order.Status__c;
                 orderWrapperItem.shippingAddress = order.Shipping_Address__c;
                 orderWrapperItem.trackingNumber = order.Tracking_Number__c;
@@ -343,7 +355,53 @@ public with sharing class OrderService {
             }
         }catch(Exception e){
             System.debug('An exception occured while querying orders');
+            throw new AuraHandledException(e.getMessage());
         }
         return ordersWrapper;
+    }
+
+    @AuraEnabled(cacheable = true)
+    public static List<Order_Line_Item__c> getOrderLineItems(Id orderId){
+        try{
+            List<Order_Line_Item__c> orderLineItems = [
+                SELECT Id, Product__c, Product__r.Name, Quantity__c,
+                Unit_Price__c, Discount_Percent__c, Line_Total__c
+                FROM Order_Line_Item__c
+                WHERE Order__c =: orderId
+            ];
+            return orderLineItems;
+        }catch(Exception e){
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    public class OrderTimelineData{
+        @AuraEnabled public Order__c order;
+        @AuraEnabled public List<Order__History> statusHistory;
+    }
+
+    @AuraEnabled
+    public static OrderTimelineData getOrderTimeline(Id orderId){
+        OrderTimelineData data = new OrderTimelineData();
+        try{
+            List<Order__c> orders = [
+                SELECT Id, 	Expected_Delivery__c, Order_Date__c, Processing_Stage__c, Status__c
+                FROM Order__c
+                WHERE Id =: orderId
+                LIMIT 1
+            ];
+            data.order = orders[0];
+            List<Order__History> orderHistory = [
+                SELECT Field, newValue, CreatedDate
+                FROM Order__History
+                WHERE Field = 'Status__c' AND 
+                ParentId = :orderId
+                ORDER BY CreatedDate ASC
+            ];
+            data.statusHistory = orderHistory;
+        }catch(Exception e){
+            throw new AuraHandledException('SOQL error: ' + e.getMessage());
+        }
+        return data;
     }
 }

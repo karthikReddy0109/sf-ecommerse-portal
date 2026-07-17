@@ -1,0 +1,100 @@
+<template>
+
+    <lightning-card
+        title="Order Timeline"
+        icon-name="standard:orders">
+
+        <div class="slds-p-around_medium">
+
+            <!-- Loading Spinner -->
+            <template lwc:if={isLoading}>
+
+                <div class="slds-is-relative slds-p-vertical_x-large">
+
+                    <lightning-spinner
+                        alternative-text="Loading order timeline"
+                        size="medium">
+                    </lightning-spinner>
+
+                </div>
+
+            </template>
+
+
+            <!-- Timeline -->
+            <template lwc:else>
+
+                <div class="timeline-container">
+
+                    <template
+                        for:each={timeLineItems}
+                        for:item="item">
+
+                        <div
+                            key={item.key}
+                            class="timeline-item">
+
+                            <!-- Timeline Dot -->
+                            <div class={item.dotClass}>
+
+                                <lightning-icon
+                                    icon-name={item.iconName}
+                                    size="x-small"
+                                    alternative-text={item.value}>
+                                </lightning-icon>
+
+                            </div>
+
+
+                            <!-- Connector Line -->
+                            <template lwc:if={item.showConnector}>
+                                <div class="timeline-connector">
+                                </div>
+                            </template>
+
+
+                            <!-- Timeline Content -->
+                            <div class="timeline-content">
+
+                                <p class="stage-label">
+                                    {item.value}
+                                </p>
+
+                                <template lwc:if={item.timeStamp}>
+
+                                    <p class="timestamp">
+                                        <lightning-formatted-date-time
+                                            value={item.timeStamp}
+                                            year="numeric"
+                                            month="short"
+                                            day="2-digit"
+                                            hour="2-digit"
+                                            minute="2-digit">
+                                        </lightning-formatted-date-time>
+                                    </p>
+
+                                </template>
+
+                                <template lwc:else>
+
+                                    <p class="timestamp">
+                                        Pending
+                                    </p>
+
+                                </template>
+
+                            </div>
+
+                        </div>
+
+                    </template>
+
+                </div>
+
+            </template>
+
+        </div>
+
+    </lightning-card>
+
+</template>
