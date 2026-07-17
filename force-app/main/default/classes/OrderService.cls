@@ -374,4 +374,34 @@ public with sharing class OrderService {
             throw new AuraHandledException(e.getMessage());
         }
     }
+
+    public class OrderTimelineData{
+        @AuraEnabled public Order__c order;
+        @AuraEnabled public List<Order__History> statusHistory;
+    }
+
+    @AuraEnabled
+    public static OrderTimelineData getOrderTimeline(Id orderId){
+        OrderTimelineData data = new OrderTimelineData();
+        try{
+            List<Order__c> orders = [
+                SELECT Id, 	Expected_Delivery__c, Order_Date__c, Processing_Stage__c, Status__c
+                FROM Order__c
+                WHERE Id =: orderId
+                LIMIT 1
+            ];
+            data.order = orders[0];
+            List<Order__History> orderHistory = [
+                SELECT Field, newValue, CreatedDate
+                FROM Order__History
+                WHERE Field = 'Status__c' AND 
+                ParentId = :orderId
+                ORDER BY CreatedDate ASC
+            ];
+            data.statusHistory = orderHistory;
+        }catch(Exception e){
+            throw new AuraHandledException('SOQL error: ' + e.getMessage());
+        }
+        return data;
+    }
 }

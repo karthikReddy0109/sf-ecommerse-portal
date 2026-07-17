@@ -50,7 +50,8 @@ export default class OrderManagement extends LightningElement {
             const orderList = await getOrders({status: this.selectedStatus, paymentStatus: this.selectedPaymentStatus, fromDate: this.fromDate, toDate: this.toDate});
             this.orders = orderList.map(order => ({
                 ...order,
-                isExpanded : false
+                isExpanded : false,
+                detailRowKey: `${order.id}-details`
             }));
             this.isLoading = false;
             console.log('Orders : ' + JSON.stringify(this.orders));
@@ -115,6 +116,8 @@ export default class OrderManagement extends LightningElement {
 
         // find the clicked order
         const clickedOrder = this.orders.find(o => o.id === orderId);
+        this.expandedOrderId = clickedOrder.isExpanded ? orderId : null;
+        this.selectedNextStatus = '';
 
         // only load line items if expanding, not collapsing
         if(clickedOrder.isExpanded) {
@@ -131,18 +134,24 @@ export default class OrderManagement extends LightningElement {
         // load line items
         getOrderLineItems({ orderId: orderId })
             .then(result => {
-                this.expandedOrderLineItems = result;
-                this.isLoadingLineItems = false;
+                if (this.expandedOrderId === orderId) {
+                    this.expandedOrderLineItems = result;
+                    this.isLoadingLineItems = false;
+                }
             })
             .catch(error => {
-                this.errorMessage = error.body.message;
-                this.isLoadingLineItems = false;
+                if (this.expandedOrderId === orderId) {
+                    this.errorMessage = error.body?.message || 'Unable to load order line items.';
+                    this.isLoadingLineItems = false;
+                }
             });
 
         // load valid next statuses for this order's current status
         getValidNextStatuses({ currentStatus: currentStatus })
             .then(result => {
-                this.nextStatusOptions = result;
+                if (this.expandedOrderId === orderId) {
+                    this.nextStatusOptions = result;
+                }
             })
             .catch(error => {
                 console.error(error);

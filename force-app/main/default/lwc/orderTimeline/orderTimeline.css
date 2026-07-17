@@ -1,0 +1,50 @@
+.timeline-container {
+    padding: 16px;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 0;
+    position: relative;
+}
+
+.timeline-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-right: 16px;
+    margin-top: 4px;
+    z-index: 1;
+}
+
+.dot-completed { background-color: #2e844a; }
+.dot-current   { background-color: #0070d2; }
+.dot-pending   { background-color: #dddbda; border: 2px solid #706e6b; }
+
+.timeline-connector {
+    position: absolute;
+    left: 7px;
+    top: 20px;
+    width: 2px;
+    height: calc(100% + 8px);
+    background-color: #dddbda;
+    z-index: 0;
+}
+
+.timeline-content {
+    flex: 1;
+    padding-bottom: 24px;
+}
+
+.stage-label {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.timestamp {
+    font-size: 12px;
+    color: #706e6b;
+}
