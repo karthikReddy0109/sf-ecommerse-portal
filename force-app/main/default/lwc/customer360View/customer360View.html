@@ -1,0 +1,278 @@
+<template>
+    <lightning-card title="Customer 360" icon-name="standard:account">
+
+        <!-- Global Loading -->
+        <template lwc:if={isLoading}>
+            <div class="slds-is-relative slds-p-around_large">
+                <lightning-spinner
+                    alternative-text="Loading Customer"
+                    size="medium">
+                </lightning-spinner>
+            </div>
+        </template>
+
+        <!-- Customer Data -->
+        <template lwc:if={accountData}>
+            Account Data
+            <!-- ========================= -->
+            <!-- Header -->
+            <!-- ========================= -->
+            <div class="slds-p-around_medium">
+
+                <div class="slds-grid slds-wrap slds-grid_align-spread slds-grid_vertical-align-center">
+
+                    <!-- Left Section -->
+                    <div class="slds-col slds-size_1-of-1 slds-large-size_8-of-12">
+
+                        <h1 class="slds-text-heading_medium slds-m-bottom_x-small">
+                            {accountData.Name}
+                        </h1>
+
+                        <div class="slds-grid slds-wrap slds-gutters_small">
+
+                            <div class="slds-col slds-size_1-of-2">
+                                <strong>Industry</strong><br />
+                                {accountData.Industry}
+                            </div>
+
+                            <div class="slds-col slds-size_1-of-2">
+                                <strong>Phone</strong><br />
+                                {accountData.Phone}
+                            </div>
+
+                            <div class="slds-col slds-size_1-of-1 slds-m-top_small">
+                                <strong>Location</strong><br />
+                                {customerLocation}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- Right Section -->
+                    <div class="slds-col slds-size_1-of-1 slds-large-size_4-of-12 slds-text-align_right">
+
+                        <span class={tierBadgeClass}>
+                            {loyaltyData.Tier__c}
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ========================= -->
+            <!-- KPI Bar -->
+            <!-- ========================= -->
+
+            <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+
+                <div class="slds-grid slds-wrap slds-gutters">
+
+                    <div class="slds-col slds-size_1-of-2 slds-large-size_1-of-4">
+                        <div class="slds-box slds-text-align_center">
+                            <div class="slds-text-title">Total Orders</div>
+                            <div class="slds-text-heading_medium">
+                                {loyaltyData.Total_Orders__c}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slds-col slds-size_1-of-2 slds-large-size_1-of-4">
+                        <div class="slds-box slds-text-align_center">
+                            <div class="slds-text-title">Total Spend</div>
+                            <div class="slds-text-heading_medium">
+                                ${loyaltyData.Total_Spend__c}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slds-col slds-size_1-of-2 slds-large-size_1-of-4 slds-m-top_small slds-large-m-top_none">
+                        <div class="slds-box slds-text-align_center">
+                            <div class="slds-text-title">Loyalty Points</div>
+                            <div class="slds-text-heading_medium">
+                                {loyaltyData.Loyalty_Points__c}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slds-col slds-size_1-of-2 slds-large-size_1-of-4 slds-m-top_small slds-large-m-top_none">
+                        <div class="slds-box slds-text-align_center">
+                            <div class="slds-text-title">Discount %</div>
+                            <div class="slds-text-heading_medium">
+                                {loyaltyData.Discount_Percentage__c}%
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ========================= -->
+            <!-- Tabs -->
+            <!-- ========================= -->
+
+            <lightning-tabset onactive={handleTabChange}>
+
+                <!-- Orders -->
+                <lightning-tab label="Recent Orders" value="orders">
+
+                    <template lwc:if={isLoadingTabData}>
+                        <div class="slds-is-relative slds-p-around_medium">
+                            <lightning-spinner
+                                alternative-text="Loading Orders"
+                                size="small">
+                            </lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template lwc:elseif={hasOrders}>
+
+                        <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th>Order #</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <template
+                                    for:each={orders}
+                                    for:item="order">
+
+                                    <tr key={order.id}>
+
+                                        <td>{order.Name}</td>
+                                        <td>${order.Final_Amount__c}</td>
+                                        <td>{order.Status__c}</td>
+                                        <td>{order.Order_Date__c}</td>
+
+                                    </tr>
+
+                                </template>
+
+                            </tbody>
+
+                        </table>
+
+                    </template>
+
+                    <template lwc:else>
+
+                        <div class="slds-p-around_medium slds-text-align_center">
+                            No recent orders found.
+                        </div>
+
+                    </template>
+
+                </lightning-tab>
+
+                <!-- Cases -->
+                <lightning-tab label="Open Cases" value="cases">
+
+                    <template lwc:if={isLoadingTabData}>
+                        <div class="slds-is-relative slds-p-around_medium">
+                            <lightning-spinner
+                                alternative-text="Loading Cases"
+                                size="small">
+                            </lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template lwc:elseif={hasCases}>
+
+                        <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+
+                            <thead>
+                                <tr>
+                                    <th>Case #</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <template
+                                    for:each={cases}
+                                    for:item="caseItem">
+
+                                    <tr key={caseItem.id}>
+
+                                        <td>{caseItem.CaseNumber}</td>
+                                        <td>{caseItem.Subject}</td>
+                                        <td>{caseItem.Status}</td>
+                                        <td>{caseItem.Priority}</td>
+
+                                    </tr>
+
+                                </template>
+
+                            </tbody>
+
+                        </table>
+
+                    </template>
+
+                    <template lwc:else>
+
+                        <div class="slds-p-around_medium slds-text-align_center">
+                            No open cases found.
+                        </div>
+
+                    </template>
+
+                </lightning-tab>
+
+                <!-- Loyalty -->
+                <lightning-tab label="Loyalty History" value="loyalty">
+
+                    <div class="slds-p-around_large">
+
+                        <div class="slds-grid slds-grid_align-spread slds-text-align_center">
+
+                            <div class={bronzeClass}>
+                                <strong>Bronze</strong>
+                            </div>
+
+                            <div class={silverClass}>
+                                <strong>Silver</strong>
+                            </div>
+
+                            <div class={goldClass}>
+                                <strong>Gold</strong>
+                            </div>
+
+                            <div class={platinumClass}>
+                                <strong>Platinum</strong>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </lightning-tab>
+
+            </lightning-tabset>
+
+        </template>
+
+        <!-- Error -->
+        <template lwc:if={errorMessage}>
+
+            <div class="slds-p-around_medium slds-text-color_error">
+                {errorMessage}
+            </div>
+
+        </template>
+
+    </lightning-card>
+</template>
