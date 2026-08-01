@@ -1,3 +1,203 @@
 <template>
-    
+    <lightning-card title="Revenue Dashboard" icon-name="standard:dashboard">
+
+        <!-- Header Actions -->
+        <div slot="actions" class="dashboard-actions">
+            <div class="last-updated-status" title="Time of the latest dashboard refresh">
+                <span class="last-updated-icon">
+                    <lightning-icon icon-name="utility:sync" alternative-text="Last updated" size="x-small"></lightning-icon>
+                </span>
+                <div class="last-updated-copy">
+                    <span class="last-updated-label">Last synced</span>
+                    <strong class="last-updated-time">{lastUpdated}</strong>
+                </div>
+            </div>
+
+            <lightning-button-icon
+                class="refresh-button"
+                icon-name="utility:refresh"
+                alternative-text="Refresh"
+                title="Refresh Dashboard"
+                variant="border-filled"
+                onclick={handleManualRefresh}>
+            </lightning-button-icon>
+        </div>
+
+        <!-- Loading -->
+        <template lwc:if={isLoading}>
+            <div class="slds-p-around_large">
+                <lightning-spinner
+                    alternative-text="Loading Dashboard"
+                    size="medium">
+                </lightning-spinner>
+            </div>
+        </template>
+
+        <!-- Dashboard -->
+        <template lwc:elseif={dashboardData}>
+
+            <div class="slds-p-around_medium">
+
+                <!-- ================= KPI SECTION ================= -->
+                <div class="slds-grid slds-wrap slds-gutters">
+
+                    <!-- Today -->
+                    <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-4">
+                        <article class="dashboard-kpi-card kpi-today">
+                            <div class="kpi-card-header">
+                                <div>
+                                    <p class="kpi-title">Today</p>
+                                    <p class="kpi-period">Live sales snapshot</p>
+                                </div>
+                                <span class="kpi-icon">
+                                    <lightning-icon icon-name="utility:clock" alternative-text="Today" size="small"></lightning-icon>
+                                </span>
+                            </div>
+
+                            <p class="kpi-value">
+                                ₹{dashboardData.todayRevenue}
+                            </p>
+
+                            <div class="kpi-card-footer">
+                                <lightning-icon icon-name="utility:cart" alternative-text="Orders" size="xx-small"></lightning-icon>
+                                <span>{dashboardData.todayOrders} Orders</span>
+                            </div>
+                        </article>
+                    </div>
+
+                    <!-- Month -->
+                    <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-4">
+                        <article class="dashboard-kpi-card kpi-month">
+                            <div class="kpi-card-header">
+                                <div>
+                                    <p class="kpi-title">This Month</p>
+                                    <p class="kpi-period">Month-to-date revenue</p>
+                                </div>
+                                <span class="kpi-icon">
+                                    <lightning-icon icon-name="utility:date_input" alternative-text="This month" size="small"></lightning-icon>
+                                </span>
+                            </div>
+
+                            <p class="kpi-value">
+                                ₹{dashboardData.monthRevenue}
+                            </p>
+
+                            <div class="kpi-card-footer">
+                                <lightning-icon icon-name="utility:cart" alternative-text="Orders" size="xx-small"></lightning-icon>
+                                <span>{dashboardData.monthOrders} Orders</span>
+                            </div>
+                        </article>
+                    </div>
+
+                    <!-- Quarter -->
+                    <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-4">
+                        <article class="dashboard-kpi-card kpi-quarter">
+                            <div class="kpi-card-header">
+                                <div>
+                                    <p class="kpi-title">This Quarter</p>
+                                    <p class="kpi-period">Quarter-to-date revenue</p>
+                                </div>
+                                <span class="kpi-icon">
+                                    <lightning-icon icon-name="utility:chart" alternative-text="This quarter" size="small"></lightning-icon>
+                                </span>
+                            </div>
+
+                            <p class="kpi-value">
+                                ₹{dashboardData.quarterRevenue}
+                            </p>
+
+                            <div class="kpi-card-footer">
+                                <lightning-icon icon-name="utility:cart" alternative-text="Orders" size="xx-small"></lightning-icon>
+                                <span>{dashboardData.quarterOrders} Orders</span>
+                            </div>
+                        </article>
+                    </div>
+
+                    <!-- Year -->
+                    <div class="slds-col slds-size_1-of-1 slds-large-size_1-of-4">
+                        <article class="dashboard-kpi-card kpi-year">
+                            <div class="kpi-card-header">
+                                <div>
+                                    <p class="kpi-title">This Year</p>
+                                    <p class="kpi-period">Year-to-date revenue</p>
+                                </div>
+                                <span class="kpi-icon">
+                                    <lightning-icon icon-name="utility:success" alternative-text="This year" size="small"></lightning-icon>
+                                </span>
+                            </div>
+
+                            <p class="kpi-value">
+                                ₹{dashboardData.yearRevenue}
+                            </p>
+
+                            <div class="kpi-card-footer">
+                                <lightning-icon icon-name="utility:cart" alternative-text="Orders" size="xx-small"></lightning-icon>
+                                <span>{dashboardData.yearOrders} Orders</span>
+                            </div>
+                        </article>
+                    </div>
+
+                </div>
+
+                <!-- ================= CHARTS ================= -->
+                <div class="dashboard-section-divider" role="separator" aria-label="Revenue analytics">
+                    <span>Revenue analytics</span>
+                </div>
+
+                <div class="analytics-row slds-grid slds-gutters">
+
+                    <!-- Revenue Trend -->
+                    <div class="analytics-chart-column slds-col slds-size_2-of-3">
+                        <lightning-card title="Revenue Trend">
+
+                            <div class="chart-container revenue-chart-container slds-p-around_medium">
+                                <canvas class="revenue-chart-canvas"></canvas>
+                            </div>
+
+                        </lightning-card>
+                    </div>
+
+                    <!-- Order Status -->
+                    <div class="analytics-chart-column slds-col slds-size_1-of-3">
+                        <lightning-card title="Orders by Status">
+
+                            <div class="chart-container orders-chart-container slds-p-around_medium">
+                                <canvas class="orders-chart-canvas"></canvas>
+                            </div>
+
+                        </lightning-card>
+                    </div>
+
+                </div>
+
+                <!-- ================= TOP PRODUCTS ================= -->
+
+                <div class="slds-m-top_large">
+
+                    <lightning-card title="Top Selling Products">
+
+                        <div class="chart-container products-chart-container slds-p-around_medium">
+                            <canvas class="products-chart-canvas"></canvas>
+                        </div>
+
+                    </lightning-card>
+
+                </div>
+
+            </div>
+
+        </template>
+
+        <!-- Error -->
+        <template lwc:elseif={errorMessage}>
+            <div class="slds-p-around_large">
+
+                <div class="slds-notify slds-notify_alert slds-theme_error">
+                    <span>{errorMessage}</span>
+                </div>
+
+            </div>
+        </template>
+
+    </lightning-card>
 </template>
