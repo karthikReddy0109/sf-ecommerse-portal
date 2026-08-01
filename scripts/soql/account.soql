@@ -3,7 +3,13 @@
 //     query text and running the command:
 //     SFDX: Execute SOQL Query with Currently Selected Text
 
-SELECT Field, newValue, CreatedDate
-                FROM Order__History
-                WHERE Field = 'Status__c'
-                ORDER BY CreatedDate ASC
+
+SELECT CALENDAR_MONTH(Order_Date__c) month,
+       CALENDAR_YEAR(Order_Date__c) year,
+       SUM(Final_Amount__c) revenue
+FROM Order__c
+WHERE Order_Date__c = LAST_N_MONTHS:6
+AND Status__c != 'Cancelled'
+GROUP BY CALENDAR_MONTH(Order_Date__c), CALENDAR_YEAR(Order_Date__c)
+ORDER BY CALENDAR_YEAR(Order_Date__c), CALENDAR_MONTH(Order_Date__c)
+

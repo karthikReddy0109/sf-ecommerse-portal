@@ -15,16 +15,16 @@ public with sharing class RevenueDashboardController {
         @AuraEnabled public String errorMessage;
     }
     public class MonthlyRevenue{
-        public String monthLabel;
-        public Decimal revenue;
+        @AuraEnabled public String monthLabel;
+        @AuraEnabled public Decimal revenue;
     }
     public class StatusCount{
-        public String status;
-        public Integer count;
+        @AuraEnabled public String status;
+        @AuraEnabled public Integer count;
     }
     public class ProductRevenue{
-        public String productName;
-        public Decimal revenue;
+        @AuraEnabled public String productName;
+        @AuraEnabled public Decimal revenue;
     }
     @AuraEnabled(cacheable = true)
     public static DashboardData getDashboardData(){
@@ -49,7 +49,7 @@ public with sharing class RevenueDashboardController {
             data.isSuccess = true;
         }catch(Exception e){
             data.isSuccess = false;
-            data.errorMessage = e.getMessage();
+            data.errorMessage = e.getMessage() + ' ' + e.getLineNumber();
         }
         
         return data;
@@ -106,14 +106,14 @@ public with sharing class RevenueDashboardController {
 
     private static List<ProductRevenue> getTopProducts(){
         List<ProductRevenue> productRevenueList = new List<ProductRevenue>();
-        for(AggregateResult ar : [SELECT Product__r.Name, SUM(Line_Total__c) totalRevenue
+        for(AggregateResult ar : [SELECT Product__r.Name product, SUM(Line_Total__c) totalRevenue
         FROM Order_Line_Item__c
         WHERE Order__r.Status__c = 'Delivered'
         GROUP BY Product__r.Name
         ORDER BY SUM(Line_Total__c) DESC
         LIMIT 5]){
             ProductRevenue productRev = new ProductRevenue();
-            productRev.productName = (String)ar.get('Product__r.Name');
+            productRev.productName = (String)ar.get('product');
             productRev.revenue = (Decimal)ar.get('totalRevenue');
             productRevenueList.add(productRev);
         }
