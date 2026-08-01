@@ -64,6 +64,7 @@ export default class OrderTimeline extends LightningElement {
             this.isLoading = false;
             console.log('Time line items' + JSON.stringify(this.timeLineItems));
         }catch(error){
+            this.isLoading = false;
             console.error(error);
         }
     }
@@ -114,7 +115,9 @@ export default class OrderTimeline extends LightningElement {
     }
 
     disconnectedCallback(){
-        // unsubscribe from platform event channel
+        unsubscribe(this.subscription, () => {
+            console.log('Unsubscribed');
+        })
     }
 
 

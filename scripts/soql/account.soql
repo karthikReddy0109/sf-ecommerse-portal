@@ -3,4 +3,7 @@
 //     query text and running the command:
 //     SFDX: Execute SOQL Query with Currently Selected Text
 
-SELECT Field, OldValue, NewValue, CreatedDate FROM Order__History
+SELECT Field, newValue, CreatedDate
+                FROM Order__History
+                WHERE Field = 'Status__c'
+                ORDER BY CreatedDate ASC

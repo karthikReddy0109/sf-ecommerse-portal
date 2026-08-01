@@ -199,7 +199,7 @@ export default class OrderManagement extends LightningElement {
             this.showSucessToastEvent('Order cancelled successfully');
             this.loadOrders();
         }catch(error){
-            this.showErrorToastEvent(error);
+            this.showErrorToastEvent(error.body?.message || 'Cancel failed');
         }
     }
 
