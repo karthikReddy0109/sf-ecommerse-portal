@@ -1,3 +1,9 @@
 <template>
-    
+  <template if:true={duplicateFound}>
+    <lightning-button
+      label="Proceed Anyway"
+      variant="brand"
+      onclick={handleProceedAnyway}>
+    </lightning-button>
+  </template>
 </template>
